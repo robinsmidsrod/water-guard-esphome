@@ -1,0 +1,15 @@
+alias: Turn on dishwasher when water leak stopped
+description: ""
+trigger:
+  - type: not_moist
+    platform: device
+    device_id: fbaa16d6de404f0bb3a2b742ec84bce0
+    entity_id: binary_sensor.water_guard_leak_alarm
+    domain: binary_sensor
+condition: []
+action:
+  - type: turn_on
+    device_id: 2a96bfc28750474d87099327fb960e86
+    entity_id: switch.dishwasher
+    domain: switch
+mode: single

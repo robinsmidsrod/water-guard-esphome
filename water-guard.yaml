@@ -1,0 +1,94 @@
+substitutions:
+  node_id: water_guard
+  node_name: Water Guard
+
+esphome:
+  name: eh_$node_id
+  friendly_name: $node_name
+  platform: ESP8266
+  board: nodemcuv2
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  domain: !secret wifi_domain
+
+# Enable logging
+logger:
+
+# Enable /metrics
+prometheus:
+
+# Enable Home Assistant API
+api:
+  encryption: 
+    key: !secret api_encryption_key
+
+ota:
+  password: !secret access_password
+
+sensor:
+  - platform: wifi_signal
+    name: WiFi Signal
+    update_interval: 10s
+
+button:
+  - platform: restart
+    name: Reboot
+
+switch:
+  # Water valve toggle switch. Whenever state changes, the valve is toggled.
+  # Should always be off on boot, to avoid accidential trigger during boot.
+  - platform: gpio
+    pin:
+      number: D2
+      inverted: False
+    name: Valve Toggle
+    restore_mode: ALWAYS_OFF
+  # Reset alarm switch. Uses pulses of approx 1200ms to perform actions.
+  # First pulse turns off siren. Second pulse resets alarm and opens valve again.
+  # Alarm can only be fully reset if alarm condition has been fixed.
+  - platform: gpio
+    pin:
+      number: D1
+      inverted: False
+    id: alarm_reset_relay
+    restore_mode: ALWAYS_OFF
+  - platform: template
+    name: Alarm Reset
+    turn_on_action:
+      - switch.turn_on: alarm_reset_relay
+      - delay: 1200ms
+      - switch.turn_off: alarm_reset_relay
+
+binary_sensor:
+  # State of water valve
+  # Water off = circuit is open
+  # Water on  = circuit is closed
+  - platform: gpio
+    pin:
+      number: D7
+      mode: INPUT_PULLUP
+      inverted: True
+    name: Valve
+    device_class: opening
+  # Water leak alarm
+  # Alarm    = circuit is open
+  # No alarm = circuit is closed
+  - platform: gpio
+    pin:
+      number: D6
+      mode: INPUT_PULLUP
+      inverted: False
+    name: Leak Alarm
+    device_class: moisture
+  # Technical alarm (battery low or power failure)
+  # Alarm    = circuit is open
+  # No alarm = circuit is closed
+  - platform: gpio
+    pin:
+      number: D5
+      mode: INPUT_PULLUP
+      inverted: False
+    name: Technical Alarm
+    device_class: problem
